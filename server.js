@@ -138,10 +138,16 @@ const startBot = async () => {
   });
   
   // Handle message status updates (delivery/read receipts)
-  sock.ev.on('message-receipt.update', async (updates) => {
-    console.log('📨 Received message-receipt.update event:', updates.length, 'updates');
+sock.ev.on('message-receipt.update', async (updates) => {
+  console.log('📨 Received message-receipt.update event');
+  
+  try {
+    // Ensure updates is always an array
+    const updatesArray = Array.isArray(updates) ? updates : [updates];
     
-    for (const update of updates) {
+    console.log('📨 Processing', updatesArray.length, 'update(s)');
+    
+    for (const update of updatesArray) {
       console.log('📊 Processing status update:', {
         messageId: update.key?.id,
         remoteJid: update.key?.remoteJid,
@@ -155,7 +161,10 @@ const startBot = async () => {
       
       await handleMessageStatusUpdate(update);
     }
-  });
+  } catch (error) {
+    console.error('❌ Error in message-receipt.update handler:', error);
+  }
+});
 
   // Enhanced contact information handler
   sock.ev.on('contacts.update', async (contacts) => {

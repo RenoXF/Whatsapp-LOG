@@ -8,7 +8,11 @@ const pool = mysql.createPool({
   database: 'whatsapp_logs',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Add these options to handle string encoding properly
+  charset: 'utf8mb4',
+  timezone: '+00:00',
+  namedPlaceholders: true
 });
 
 // Test connection

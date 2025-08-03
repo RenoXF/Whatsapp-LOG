@@ -302,69 +302,100 @@ const messageExists = async (messageId) => {
 // Handle message status updates (delivery/read receipts)
 const handleMessageStatusUpdate = async (update) => {
   try {
-    console.log('📨 Received message-receipt.update event:', update.length, 'updates');
+    console.log('📨 Processing single status update:', {
+      messageId: update.key?.id,
+      remoteJid: update.key?.remoteJid,
+      participant: update.key?.participant,
+      receiptUserJid: update.receipt?.userJid,
+      receiptReadTimestamp: update.receipt?.readTimestamp,
+      receiptTimestamp: update.receipt?.receiptTimestamp,
+      receiptType: update.receipt?.type,
+      fullUpdate: JSON.stringify(update, null, 2)
+    });
     
-    for (const receipt of update) {
-      console.log('📊 Processing status update:', {
-        messageId: receipt.key?.id,
-        remoteJid: receipt.key?.remoteJid,
-        participant: receipt.key?.participant,
-        receiptUserJid: receipt.receipt?.userJid,
-        receiptReadTimestamp: receipt.receipt?.readTimestamp,
-        receiptTimestamp: receipt.receipt?.receiptTimestamp,
-        receiptType: receipt.receipt?.type,
-        fullUpdate: JSON.stringify(receipt, null, 2)
-      });
-      
-      // Check if the message exists before saving the status
-      const messageId = receipt.key?.id;
-      if (!messageId) {
-        console.warn('⚠️ Missing message ID in receipt, skipping');
-        continue;
-      }
-      
-      const exists = await messageExists(messageId);
-      if (!exists) {
-        console.log(`⚠️ Message ${messageId} not found in database, skipping status update`);
-        continue;
-      }
-      
-      // Determine the status type
-      let status = 'unknown';
-      if (receipt.receipt?.type === 'read') {
-        status = 'read';
-      } else if (receipt.receipt?.type === 'delivery') {
-        status = 'delivered';
-      }
-      
-      // Get the timestamp
-      let timestamp = null;
-      if (receipt.receipt?.readTimestamp) {
-        timestamp = new Date(receipt.receipt.readTimestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
-      } else if (receipt.receipt?.receiptTimestamp) {
-        timestamp = new Date(receipt.receipt.receiptTimestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
-      }
-      
+    // Get the message ID
+    const messageId = update.key?.id;
+    if (!messageId) {
+      console.warn('⚠️ Missing message ID in receipt, skipping');
+      return;
+    }
+    
+    // Check if the message exists
+    const exists = await messageExists(messageId);
+    if (!exists) {
+      console.log(`⚠️ Message ${messageId} not found in database, skipping status update`);
+      return;
+    }
+    
+    // Determine the status type with proper validation
+    let status = 'unknown';
+    if (update.receipt?.type === 'read') {
+      status = 'read';
+    } else if (update.receipt?.type === 'delivery') {
+      status = 'delivered';
+    } else if (update.receipt?.type === 'sent') {
+      status = 'sent';
+    } else if (update.receipt?.type === 'error') {
+      status = 'failed';
+    }
+    
+    // Validate status length
+    if (status.length > 20) {
+      console.warn(`⚠️ Status value too long: ${status}, truncating to 20 characters`);
+      status = status.substring(0, 20);
+    }
+    
+    // Get the timestamp
+    let timestamp = null;
+    if (update.receipt?.readTimestamp) {
+      timestamp = new Date(update.receipt.readTimestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    } else if (update.receipt?.receiptTimestamp) {
+      timestamp = new Date(update.receipt.receiptTimestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    }
+    
+    try {
       // Save the status update
       await pool.query(
         'INSERT INTO message_status (message_id, to_jid, status, timestamp) VALUES (?, ?, ?, ?)',
         [
           messageId,
-          receipt.key?.remoteJid,
+          update.key?.remoteJid,
           status,
           timestamp
         ]
       );
       
       console.log(`✅ Saved status for message ${messageId}: ${status}`);
+    } catch (error) {
+      // Handle specific database errors
+      if (error.code === 'ER_DATA_TOO_LONG') {
+        console.error(`❌ Data too long for status column: ${status}`);
+        
+        // Try with a truncated status
+        const truncatedStatus = status.substring(0, 10);
+        try {
+          await pool.query(
+            'INSERT INTO message_status (message_id, to_jid, status, timestamp) VALUES (?, ?, ?, ?)',
+            [
+              messageId,
+              update.key?.remoteJid,
+              truncatedStatus,
+              timestamp
+            ]
+          );
+          
+          console.log(`✅ Saved truncated status for message ${messageId}: ${truncatedStatus}`);
+        } catch (retryError) {
+          console.error('❌ Failed to save even with truncated status:', retryError);
+        }
+      } else {
+        console.error('❌ Error saving message status:', error);
+      }
     }
   } catch (error) {
     console.error('❌ Error handling message status update:', error);
-    throw error;
   }
 };
-
-
 
 // Test function to manually check message status
 async function testMessageStatus() {
