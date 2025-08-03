@@ -1,13 +1,11 @@
 # UNFINISH PROJECT
 
 
-for the database
+for the database (mysql)
 
 
---
 -- Table structure for table `contacts`
---
-
+```
 CREATE TABLE `contacts` (
   `jid` varchar(255) NOT NULL,
   `name` varchar(255) DEFAULT NULL,
@@ -29,13 +27,11 @@ CREATE TABLE `contacts` (
   `vname` varchar(255) DEFAULT NULL,
   `labels` json DEFAULT NULL,
   `last_updated` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
--- --------------------------------------------------------
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; 
+```
 
---
 -- Table structure for table `group_participants`
---
-
+```
 CREATE TABLE `group_participants` (
   `id` int NOT NULL,
   `group_id` varchar(255) DEFAULT NULL,
@@ -44,13 +40,10 @@ CREATE TABLE `group_participants` (
   `jid` varchar(255) DEFAULT NULL,
   `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
 
--- --------------------------------------------------------
-
---
 -- Table structure for table `messages`
---
-
+```
 CREATE TABLE `messages` (
   `id` int NOT NULL,
   `message_id` varchar(255) NOT NULL,
@@ -72,13 +65,10 @@ CREATE TABLE `messages` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `from_me` tinyint(1) DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
 
--- --------------------------------------------------------
-
---
 -- Table structure for table `message_reactions`
---
-
+```
 CREATE TABLE `message_reactions` (
   `id` int NOT NULL,
   `message_id` varchar(255) NOT NULL,
@@ -87,13 +77,10 @@ CREATE TABLE `message_reactions` (
   `timestamp` timestamp NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
 
--- --------------------------------------------------------
-
---
 -- Table structure for table `message_status`
---
-
+```
 CREATE TABLE `message_status` (
   `id` int NOT NULL,
   `message_id` varchar(255) NOT NULL,
@@ -102,13 +89,10 @@ CREATE TABLE `message_status` (
   `timestamp` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
 
--- --------------------------------------------------------
-
---
 -- Table structure for table `whatsapp_groups`
---
-
+```
 CREATE TABLE `whatsapp_groups` (
   `group_id` varchar(255) NOT NULL,
   `group_name` varchar(255) DEFAULT NULL,
@@ -127,102 +111,95 @@ CREATE TABLE `whatsapp_groups` (
   `participant_count` int DEFAULT '0',
   `last_updated` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
 
---
 -- Indexes for table `contacts`
---
+```
 ALTER TABLE `contacts`
   ADD PRIMARY KEY (`jid`),
   ADD KEY `idx_name` (`name`),
   ADD KEY `idx_notify` (`notify`);
+```
 
---
 -- Indexes for table `group_participants`
---
+```
 ALTER TABLE `group_participants`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `group_id` (`group_id`,`participant_id`),
   ADD KEY `idx_group_participants` (`group_id`),
   ADD KEY `idx_participant_groups` (`participant_id`);
+```
 
---
 -- Indexes for table `messages`
---
+```
 ALTER TABLE `messages`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `message_id` (`message_id`);
+```
 
---
 -- Indexes for table `message_reactions`
---
+```
 ALTER TABLE `message_reactions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `message_id` (`message_id`);
+```
 
---
 -- Indexes for table `message_status`
---
+```
 ALTER TABLE `message_status`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_message_id` (`message_id`),
   ADD KEY `idx_to_jid` (`to_jid`),
   ADD KEY `idx_status` (`status`);
+```
 
---
 -- Indexes for table `whatsapp_groups`
---
+```
 ALTER TABLE `whatsapp_groups`
   ADD PRIMARY KEY (`group_id`),
   ADD KEY `idx_group_name` (`group_name`);
+```
 
---
--- AUTO_INCREMENT for dumped tables
---
 
---
 -- AUTO_INCREMENT for table `group_participants`
---
+```
 ALTER TABLE `group_participants`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6527;
+```
 
---
 -- AUTO_INCREMENT for table `messages`
---
+```
 ALTER TABLE `messages`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3055;
+```
 
---
 -- AUTO_INCREMENT for table `message_reactions`
---
+```
 ALTER TABLE `message_reactions`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+```
 
---
 -- AUTO_INCREMENT for table `message_status`
---
+```
 ALTER TABLE `message_status`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+```
 
---
--- Constraints for dumped tables
---
-
---
 -- Constraints for table `group_participants`
---
+```
 ALTER TABLE `group_participants`
   ADD CONSTRAINT `group_participants_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `whatsapp_groups` (`group_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `group_participants_ibfk_2` FOREIGN KEY (`participant_id`) REFERENCES `contacts` (`jid`) ON DELETE SET NULL;
+```
 
---
 -- Constraints for table `message_reactions`
---
+```
 ALTER TABLE `message_reactions`
   ADD CONSTRAINT `message_reactions_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `messages` (`message_id`);
+```
 
---
 -- Constraints for table `message_status`
---
+```
 ALTER TABLE `message_status`
   ADD CONSTRAINT `message_status_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `messages` (`message_id`) ON DELETE CASCADE;
-COMMIT;
+```
